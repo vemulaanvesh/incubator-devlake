@@ -1,0 +1,41 @@
+# Internal-only workflow — builds a custom DevLake lake image with the
+# ArgoCD multi-source fix layered on top of apache/devlake:v1.0.3-beta9.
+# This file is intentionally NOT part of the upstream community PR.
+name: Build custom DevLake image (argocd multi-source fix)
+
+on:
+  push:
+    branches:
+      - fix/argocd-multi-source-v1.0.3-beta9
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/devlake:v1.0.3-beta9-argocd-multisource-fix
+            ghcr.io/${{ github.repository_owner }}/devlake:v1.0.3-beta9-argocd-repo-url-fix
